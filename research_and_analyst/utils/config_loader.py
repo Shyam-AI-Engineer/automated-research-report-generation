@@ -62,3 +62,15 @@ def load_config(config_path: str | None = None) -> dict:
     except Exception as e:
         log.error("Error loading configuration", error=str(e))
         raise ResearchAnalystException("Failed to load configuration file", e)
+    
+# ----------------------------------------------------------------------
+# 🔹 Test Run (Standalone)
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    try:
+        config = load_config()
+        print("Config loaded successfully!")
+        print(json.dumps(config, indent=2))
+        log.info("ConfigLoader test run completed successfully")
+    except ResearchAnalystException as e:
+        log.error("ConfigLoader test run failed", error=str(e))
