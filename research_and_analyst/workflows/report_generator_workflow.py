@@ -49,4 +49,28 @@ class AutonomousReportGenerator:
 
     # ----------------------------------------------------------------------
     
+    def create_analyst(self, state: GenerateAnalystsState):
+        """Generate analyst personas based on topic and feedback."""
+        topic = state["topic"]
+        max_analysts = state["max_analysts"]
+        human_analyst_feedback = state.get("human_analyst_feedback", "")
+
+        try:
+            self.logger.info("Creating analyst personas", topic=topic)
+            structured_llm = self.llm.with_structured_output(Perspectives)
+            system_prompt = CREATE_ANALYSTS_PROMPT.render(
+                topic=topic, max_analysts=max_analysts,
+                human_analyst_feedback=human_analyst_feedback,
+            )
+            analysts = structured_llm.invoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content="Generate the set of analysts."),
+            ])
+            self.logger.info("Analysts created", count=len(analysts.analysts))
+            return {"analysts": analysts.analysts}
+        except Exception as e:
+            self.logger.error("Error creating analysts", error=str(e))
+            raise ResearchAnalystException("Failed to create analysts", e)
+
+    # ----------------------------------------------------------------------
     
