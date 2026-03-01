@@ -33,3 +33,20 @@ from research_and_analyst.prompt_lib.prompt_locator import (
 )
 from research_and_analyst.logger import GLOBAL_LOGGER
 from research_and_analyst.exception.custom_exception import ResearchAnalystException
+
+class AutonomousReportGenerator:
+    """
+    Handles the end-to-end autonomous report generation workflow using LangGraph.
+    """
+
+    def __init__(self, llm):
+        self.llm = llm
+        self.memory = MemorySaver()
+        self.tavily_search = TavilySearchResults(
+            tavily_api_key="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"
+        )
+        self.logger = GLOBAL_LOGGER.bind(module="AutonomousReportGenerator")
+
+    # ----------------------------------------------------------------------
+    
+    
