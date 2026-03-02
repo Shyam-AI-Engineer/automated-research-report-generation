@@ -74,3 +74,53 @@ class AutonomousReportGenerator:
 
     # ----------------------------------------------------------------------
     
+    def human_feedback(self):
+        """Pause node for human analyst feedback."""
+        try:
+            self.logger.info("Awaiting human feedback")
+        except Exception as e:
+            self.logger.error("Error during feedback stage", error=str(e))
+            raise ResearchAnalystException("Human feedback node failed", e)
+
+    # ----------------------------------------------------------------------
+    def write_report(self, state: ResearchGraphState):
+        """Compile all report sections into unified content."""
+        sections = state.get("sections", [])
+        topic = state.get("topic", "")
+
+        try:
+            if not sections:
+                sections = ["No sections generated — please verify interview stage."]
+            self.logger.info("Writing report", topic=topic)
+            system_prompt = REPORT_WRITER_INSTRUCTIONS.render(topic=topic)
+            report = self.llm.invoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content="\n\n".join(sections))
+            ])
+            self.logger.info("Report written successfully")
+            return {"content": report.content}
+        except Exception as e:
+            self.logger.error("Error writing main report", error=str(e))
+            raise ResearchAnalystException("Failed to write main report", e)
+
+    # ----------------------------------------------------------------------
+    def write_introduction(self, state: ResearchGraphState):
+        """Generate the report introduction."""
+        try:
+            sections = state["sections"]
+            topic = state["topic"]
+            formatted_str_sections = "\n\n".join([f"{s}" for s in sections])
+            self.logger.info("Generating introduction", topic=topic)
+            system_prompt = INTRO_CONCLUSION_INSTRUCTIONS.render(
+                topic=topic, formatted_str_sections=formatted_str_sections
+            )
+            intro = self.llm.invoke([
+                SystemMessage(content=system_prompt),
+                HumanMessage(content="Write the report introduction")
+            ])
+            self.logger.info("Introduction generated", length=len(intro.content))
+            return {"introduction": intro.content}
+        except Exception as e:
+            self.logger.error("Error generating introduction", error=str(e))
+            raise ResearchAnalystException("Failed to generate introduction", e)
+    
