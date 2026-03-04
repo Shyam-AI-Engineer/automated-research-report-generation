@@ -288,4 +288,19 @@ class AutonomousReportGenerator:
 
                     c.drawString(x, y, wline)
                     y -= line_height
+
+            # Optional footer with page number
+            for page_num in range(1, c.getPageNumber() + 1):
+                c.setFont("Helvetica", 9)
+                c.drawCentredString(width / 2, 25, f"Page {page_num}")
+
+            c.save()
+            self.logger.info("Centered PDF saved successfully", path=file_path)
+
+        except Exception as e:
+            self.logger.error("PDF save failed", path=file_path, error=str(e))
+            raise ResearchAnalystException("Error saving PDF report", e)
+
+    # ----------------------------------------------------------------------
+    
     
