@@ -145,5 +145,36 @@ class AutonomousReportGenerator:
             self.logger.error("Error generating conclusion", error=str(e))
             raise ResearchAnalystException("Failed to generate conclusion", e)
         
+    # ----------------------------------------------------------------------
+    def finalize_report(self, state: ResearchGraphState):
+        """Assemble introduction, content, and conclusion into final report."""
+        try:
+            content = state["content"]
+            self.logger.info("Finalizing report compilation")
+            if content.startswith("## Insights"):
+                content = content.strip("## Insights")
+
+            sources = None
+            if "## Sources" in content:
+                try:
+                    content, sources = content.split("\n## Sources\n")
+                except Exception:
+                    pass
+
+            final_report = (
+                state["introduction"] + "\n\n---\n\n" +
+                content + "\n\n---\n\n" +
+                state["conclusion"]
+            )
+            if sources:
+                final_report += "\n\n## Sources\n" + sources
+
+            self.logger.info("Report finalized")
+            return {"final_report": final_report}
+        except Exception as e:
+            self.logger.error("Error finalizing report", error=str(e))
+            raise ResearchAnalystException("Failed to finalize report", e)
+
+    # ----------------------------------------------------------------------
         
     
