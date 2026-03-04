@@ -176,5 +176,39 @@ class AutonomousReportGenerator:
             raise ResearchAnalystException("Failed to finalize report", e)
 
     # ----------------------------------------------------------------------
+    
+    def save_report(self, final_report: str, topic: str,
+                    format: str = "docx"):
+        """Save the report as DOCX or PDF, each in its own subfolder."""
+        try:
+            self.logger.info("Saving report", topic=topic, format=format)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            safe_topic = re.sub(r'[\\/*?:"<>|]', "_", topic)
+            base_name = f"{safe_topic.replace(' ', '_')}_{timestamp}"
+
+            # Root folder (always inside project)
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+            root_dir = os.path.join(project_root, "generated_report")
+
+            # Create subfolder for this report
+            report_folder = os.path.join(root_dir, base_name)
+            os.makedirs(report_folder, exist_ok=True)
+
+            # Final file path inside that folder
+            file_path = os.path.join(report_folder, f"{base_name}.{format}")
+
+            if format == "docx":
+                self._save_as_docx(final_report, file_path)
+            elif format == "pdf":
+                self._save_as_pdf(final_report, file_path)
+            else:
+                raise ValueError("Invalid format. Use 'docx' or 'pdf'.")
+
+            self.logger.info("Report saved successfully", path=file_path)
+            return file_path
+
+        except Exception as e:
+            self.logger.error("Error saving report", error=str(e))
+            raise ResearchAnalystException("Failed to save report file", e)
         
     
