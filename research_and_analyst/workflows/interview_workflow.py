@@ -33,3 +33,24 @@ class InterviewGraphBuilder:
         self.tavily_search = tavily_search
         self.memory = MemorySaver()
         self.logger = GLOBAL_LOGGER.bind(module="InterviewGraphBuilder")
+        
+    # ----------------------------------------------------------------------
+    # 🔹 Step 1: Analyst generates question
+    # ----------------------------------------------------------------------
+    def _generate_question(self, state: InterviewState):
+        """
+        Generate the first question for the interview based on the analyst's persona.
+        """
+        analyst = state["analyst"]
+        messages = state["messages"]
+
+        try:
+            self.logger.info("Generating analyst question", analyst=analyst.name)
+            system_prompt = ANALYST_ASK_QUESTIONS.render(goals=analyst.persona)
+            question = self.llm.invoke([SystemMessage(content=system_prompt)] + messages)
+            self.logger.info("Question generated successfully", question_preview=question.content[:200])
+            return {"messages": [question]}
+
+        except Exception as e:
+            self.logger.error("Error generating analyst question", error=str(e))
+            raise ResearchAnalystException("Failed to generate analyst question", e)
