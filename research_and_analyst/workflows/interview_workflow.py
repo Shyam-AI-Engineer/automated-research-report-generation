@@ -110,3 +110,44 @@ class InterviewGraphBuilder:
         except Exception as e:
             self.logger.error("Error generating expert answer", error=str(e))
             raise ResearchAnalystException("Failed to generate expert answer", e)
+        
+    # ----------------------------------------------------------------------
+    # 🔹 Step 4: Save interview transcript
+    # ----------------------------------------------------------------------
+    def _save_interview(self, state: InterviewState):
+        """
+        Save the entire conversation between the analyst and expert as a transcript.
+        """
+        try:
+            messages = state["messages"]
+            interview = get_buffer_string(messages)
+            self.logger.info("Interview transcript saved", message_count=len(messages))
+            return {"interview": interview}
+
+        except Exception as e:
+            self.logger.error("Error saving interview transcript", error=str(e))
+            raise ResearchAnalystException("Failed to save interview transcript", e)
+
+    # ----------------------------------------------------------------------
+    # 🔹 Step 5: Write report section from interview context
+    # ----------------------------------------------------------------------
+    def _write_section(self, state: InterviewState):
+        """
+        Write a concise report section based on the interview and gathered context.
+        """
+        context = state.get("context", ["[No context available.]"])
+        analyst = state["analyst"]
+
+        try:
+            self.logger.info("Generating report section", analyst=analyst.name)
+            system_prompt = WRITE_SECTION.render(focus=analyst.description)
+            section = self.llm.invoke(
+                [SystemMessage(content=system_prompt)]
+                + [HumanMessage(content=f"Use this source to write your section: {context}")]
+            )
+            self.logger.info("Report section generated successfully", length=len(section.content))
+            return {"sections": [section.content]}
+
+        except Exception as e:
+            self.logger.error("Error writing report section", error=str(e))
+            raise ResearchAnalystException("Failed to generate report section", e)
