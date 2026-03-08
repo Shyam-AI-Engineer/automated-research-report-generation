@@ -303,4 +303,96 @@ class AutonomousReportGenerator:
 
     # ----------------------------------------------------------------------
     
+    def build_graph(self):
+        """Construct the report generation graph."""
+        try:
+            self.logger.info("Building report generation graph")
+            builder = StateGraph(ResearchGraphState)
+            interview_graph = InterviewGraphBuilder(self.llm, self.tavily_search).build()
+
+            def initiate_all_interviews(state: ResearchGraphState):
+                topic = state.get("topic", "Untitled Topic")
+                analysts = state.get("analysts", [])
+                if not analysts:
+                    self.logger.warning("No analysts found — skipping interviews")
+                    return END
+                return [
+                    Send(
+                        "conduct_interview",
+                        {
+                            "analyst": analyst,
+                            "messages": [HumanMessage(content=f"So, let's discuss about {topic}.")],
+                            "max_num_turns": 2,
+                            "context": [],
+                            "interview": "",
+                            "sections": [],
+                        },
+                    )
+                    for analyst in analysts
+                ]
+
+            builder.add_node("create_analyst", self.create_analyst)
+            builder.add_node("human_feedback", self.human_feedback)
+            builder.add_node("conduct_interview", interview_graph)
+            builder.add_node("write_report", self.write_report)
+            builder.add_node("write_introduction", self.write_introduction)
+            builder.add_node("write_conclusion", self.write_conclusion)
+            builder.add_node("finalize_report", self.finalize_report)
+
+            builder.add_edge(START, "create_analyst")
+            builder.add_edge("create_analyst", "human_feedback")
+            builder.add_conditional_edges(
+                "human_feedback",
+                initiate_all_interviews,
+                ["conduct_interview", END]
+            )
+            builder.add_edge("conduct_interview", "write_report")
+            builder.add_edge("conduct_interview", "write_introduction")
+            builder.add_edge("conduct_interview", "write_conclusion")
+            builder.add_edge(["write_report", "write_introduction", "write_conclusion"], "finalize_report")
+            builder.add_edge("finalize_report", END)
+
+            graph = builder.compile(interrupt_before=["human_feedback"], checkpointer=self.memory)
+            self.logger.info("Report generation graph built successfully")
+            return graph
+        except Exception as e:
+            self.logger.error("Error building report graph", error=str(e))
+            raise ResearchAnalystException("Failed to build report generation graph", e)
+
+
+# ----------------------------------------------------------------------
+
+if __name__ == "__main__":
+    try:
+        llm = ModelLoader().load_llm()
+        reporter = AutonomousReportGenerator(llm)
+        graph = reporter.build_graph()
+
+        topic = "Impact of LLMs over the Future of Jobs?"
+        thread = {"configurable": {"thread_id": "1"}}
+        reporter.logger.info("Starting report generation pipeline", topic=topic)
+
+        for _ in graph.stream({"topic": topic, "max_analysts": 3}, thread, stream_mode="values"):
+            pass
+
+        state = graph.get_state(thread)
+        feedback = input("\n Enter your feedback or press Enter to continue: ").strip()
+        graph.update_state(thread, {"human_analyst_feedback": feedback}, as_node="human_feedback")
+
+        for _ in graph.stream(None, thread, stream_mode="values"):
+            pass
+
+        final_state = graph.get_state(thread)
+        final_report = final_state.values.get("final_report")
+
+        if final_report:
+            reporter.logger.info("Report generated successfully")
+            reporter.save_report(final_report, topic, "docx")
+            reporter.save_report(final_report, topic, "pdf")
+        else:
+            reporter.logger.error("No report content generated")
+
+    except Exception as e:
+        GLOBAL_LOGGER.error("Fatal error in main execution", error=str(e))
+        raise ResearchAnalystException("Autonomous report generation pipeline failed", e)
     
