@@ -31,3 +31,16 @@ class ReportService:
         except Exception as e:
             self.logger.error("Error initiating report generation", error=str(e))
             raise ResearchAnalystException("Failed to start report generation", e)
+        
+    def submit_feedback(self, thread_id: str, feedback: str):
+        """Update human feedback in graph state."""
+        try:
+            thread = {"configurable": {"thread_id": thread_id}}
+            self.graph.update_state(thread, {"human_analyst_feedback": feedback}, as_node="human_feedback")
+            self.logger.info("Feedback updated", thread_id=thread_id)
+            for _ in self.graph.stream(None, thread, stream_mode="values"):
+                pass
+            return {"message": "Feedback processed successfully"}
+        except Exception as e:
+            self.logger.error("Error updating feedback", error=str(e))
+            raise ResearchAnalystException("Failed to update feedback", e)
