@@ -151,3 +151,35 @@ class InterviewGraphBuilder:
         except Exception as e:
             self.logger.error("Error writing report section", error=str(e))
             raise ResearchAnalystException("Failed to generate report section", e)
+        
+    # ----------------------------------------------------------------------
+    # 🔹 Build Graph
+    # ----------------------------------------------------------------------
+    def build(self):
+        """
+        Construct and compile the LangGraph Interview workflow.
+        """
+        try:
+            self.logger.info("Building Interview Graph workflow")
+            builder = StateGraph(InterviewState)
+
+            builder.add_node("ask_question", self._generate_question)
+            builder.add_node("search_web", self._search_web)
+            builder.add_node("generate_answer", self._generate_answer)
+            builder.add_node("save_interview", self._save_interview)
+            builder.add_node("write_section", self._write_section)
+
+            builder.add_edge(START, "ask_question")
+            builder.add_edge("ask_question", "search_web")
+            builder.add_edge("search_web", "generate_answer")
+            builder.add_edge("generate_answer", "save_interview")
+            builder.add_edge("save_interview", "write_section")
+            builder.add_edge("write_section", END)
+
+            graph = builder.compile(checkpointer=self.memory)
+            self.logger.info("Interview Graph compiled successfully")
+            return graph
+
+        except Exception as e:
+            self.logger.error("Error building interview graph", error=str(e))
+            raise ResearchAnalystException("Failed to build interview graph workflow", e)
