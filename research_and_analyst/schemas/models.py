@@ -38,3 +38,38 @@ class Perspectives(BaseModel):
     analysts: List[Analyst] = Field(
         description="Comprehensive list of analysts with their roles and affiliations."
     )
+    
+# -------------------------------
+# Search Query Output Parser
+# -------------------------------
+
+class SearchQuery(BaseModel):
+    search_query: str = Field(None, description="Search query for retrieval.")
+
+# -------------------------------
+# State Classes for Graphs
+# -------------------------------
+
+class GenerateAnalystsState(TypedDict):
+    topic: str  # Research topic
+    max_analysts: int  # Number of analysts to generate
+    human_analyst_feedback: str  # Feedback from human
+    analysts: List[Analyst]  # List of analysts generated
+
+class InterviewState(MessagesState):
+    max_num_turns: int  # Max interview turns allowed
+    context: Annotated[list, operator.add]  # Retrieved or searched context
+    analyst: Analyst  # Analyst conducting interview
+    interview: str  # Full interview transcript
+    sections: list  # Generated section from interview
+
+class ResearchGraphState(TypedDict):
+    topic: str  # Research topic
+    max_analysts: int  # Number of analysts
+    human_analyst_feedback: str  # Optional human feedback
+    analysts: List[Analyst]  # All analysts involved
+    sections: Annotated[list, operator.add]  # All interview-generated sections
+    introduction: str  # Introduction of final report
+    content: str  # Main content of report
+    conclusion: str  # Conclusion of final report
+    final_report: str  # Compiled report string
