@@ -54,3 +54,16 @@ echo ""
 if [ -z "$SUBSCRIPTION_ID" ]; then
     SUBSCRIPTION_ID="$CURRENT_SUB"
 fi
+
+# Create Resource Group
+echo "Creating Resource Group: $RESOURCE_GROUP..."
+az group create --name $RESOURCE_GROUP --location $LOCATION --subscription "$SUBSCRIPTION_ID"
+
+# Create Storage Account
+echo "Creating Storage Account: $STORAGE_ACCOUNT..."
+az storage account create \
+  --resource-group $RESOURCE_GROUP \
+  --name $STORAGE_ACCOUNT \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --subscription "$SUBSCRIPTION_ID"
