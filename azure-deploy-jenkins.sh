@@ -129,3 +129,36 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     fi
   fi
 done
+
+# Get ACR credentials for container deployment
+echo "Retrieving ACR credentials..."
+ACR_USERNAME=$(az acr credential show \
+  --name $ACR_NAME \
+  --subscription "$SUBSCRIPTION_ID" \
+  --query username -o tsv)
+
+ACR_PASSWORD=$(az acr credential show \
+  --name $ACR_NAME \
+  --subscription "$SUBSCRIPTION_ID" \
+  --query passwords[0].value -o tsv)
+
+# Deploy Jenkins Container using custom image
+echo "Deploying Jenkins Container..."
+az container create \
+  --resource-group $RESOURCE_GROUP \
+  --name $CONTAINER_NAME \
+  --image ${ACR_NAME}.azurecr.io/${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG} \
+  --registry-login-server ${ACR_NAME}.azurecr.io \
+  --registry-username $ACR_USERNAME \
+  --registry-password $ACR_PASSWORD \
+  --os-type Linux \
+  --dns-name-label $DNS_NAME_LABEL \
+  --ports 8080 \
+  --cpu 2 \
+  --memory 4 \
+  --azure-file-volume-account-name $STORAGE_ACCOUNT \
+  --azure-file-volume-account-key $STORAGE_KEY \
+  --azure-file-volume-share-name $FILE_SHARE \
+  --azure-file-volume-mount-path //var/jenkins_home \
+  --environment-variables JAVA_OPTS="-Djenkins.install.runSetupWizard=true" \
+  --subscription "$SUBSCRIPTION_ID"
