@@ -67,3 +67,10 @@ az storage account create \
   --location $LOCATION \
   --sku Standard_LRS \
   --subscription "$SUBSCRIPTION_ID"
+
+# Get Storage Account Key
+STORAGE_KEY=$(az storage account keys list \
+  --resource-group $RESOURCE_GROUP \
+  --account-name $STORAGE_ACCOUNT \
+  --subscription "$SUBSCRIPTION_ID" \
+  --query '[0].value' -o tsv)
