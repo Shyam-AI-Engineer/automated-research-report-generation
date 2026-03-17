@@ -162,3 +162,30 @@ az container create \
   --azure-file-volume-mount-path //var/jenkins_home \
   --environment-variables JAVA_OPTS="-Djenkins.install.runSetupWizard=true" \
   --subscription "$SUBSCRIPTION_ID"
+
+# Wait for deployment
+echo "Waiting for Jenkins to deploy..."
+sleep 10
+
+# Get Jenkins URL
+JENKINS_URL=$(az container show \
+  --resource-group $RESOURCE_GROUP \
+  --name $CONTAINER_NAME \
+  --subscription "$SUBSCRIPTION_ID" \
+  --query ipAddress.fqdn -o tsv)
+
+echo ""
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║           Deployment Complete!                         ║"
+echo "╚════════════════════════════════════════════════════════╝"
+echo ""
+echo "Jenkins URL: http://$JENKINS_URL:8080"
+echo ""
+echo "Wait 2-3 minutes for Jenkins to fully start, then run:"
+echo ""
+echo "az container exec \\"
+echo "  --resource-group $RESOURCE_GROUP \\"
+echo "  --name $CONTAINER_NAME \\"
+echo "  --exec-command 'cat /var/jenkins_home/secrets/initialAdminPassword'"
+echo ""
+echo "Save this information for the next steps!"
