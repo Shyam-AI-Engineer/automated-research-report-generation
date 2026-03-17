@@ -74,3 +74,20 @@ STORAGE_KEY=$(az storage account keys list \
   --account-name $STORAGE_ACCOUNT \
   --subscription "$SUBSCRIPTION_ID" \
   --query '[0].value' -o tsv)
+
+# Create File Share
+echo "Creating File Share: $FILE_SHARE..."
+az storage share create \
+  --name $FILE_SHARE \
+  --account-name $STORAGE_ACCOUNT \
+  --account-key $STORAGE_KEY \
+  --subscription "$SUBSCRIPTION_ID"
+
+# Create Azure Container Registry
+echo "Creating Container Registry: $ACR_NAME..."
+az acr create \
+  --resource-group $RESOURCE_GROUP \
+  --name $ACR_NAME \
+  --sku Basic \
+  --admin-enabled true \
+  --subscription "$SUBSCRIPTION_ID"
