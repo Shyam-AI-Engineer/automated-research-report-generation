@@ -91,3 +91,11 @@ az acr create \
   --sku Basic \
   --admin-enabled true \
   --subscription "$SUBSCRIPTION_ID"
+
+# Login to ACR
+echo "Logging in to Azure Container Registry..."
+az acr login --name $ACR_NAME
+
+# Build custom Jenkins image with Git and safe.directory configuration
+echo "Building custom Jenkins Docker image for Linux AMD64..."
+docker build --platform linux/amd64 -f Dockerfile.jenkins -t ${ACR_NAME}.azurecr.io/${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG} .
