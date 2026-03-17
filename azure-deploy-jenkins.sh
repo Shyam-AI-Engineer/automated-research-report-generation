@@ -99,3 +99,33 @@ az acr login --name $ACR_NAME
 # Build custom Jenkins image with Git and safe.directory configuration
 echo "Building custom Jenkins Docker image for Linux AMD64..."
 docker build --platform linux/amd64 -f Dockerfile.jenkins -t ${ACR_NAME}.azurecr.io/${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG} .
+
+# Push Jenkins image to ACR with retry logic
+echo "Pushing Jenkins image to ACR..."
+MAX_RETRIES=3
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if docker push ${ACR_NAME}.azurecr.io/${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG}; then
+    echo "Image pushed successfully!"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+      echo "Push failed. Retrying ($RETRY_COUNT/$MAX_RETRIES)..."
+      sleep 5
+    else
+      echo "Failed to push image after $MAX_RETRIES attempts."
+      echo ""
+      echo "This can happen due to network issues or large image size."
+      echo ""
+      echo "Options to fix:"
+      echo "1. Re-run the script (it will use cached layers and be faster)"
+      echo "2. Check your internet connection"
+      echo "3. Try pushing manually:"
+      echo "   az acr login --name $ACR_NAME"
+      echo "   docker push ${ACR_NAME}.azurecr.io/${JENKINS_IMAGE_NAME}:${JENKINS_IMAGE_TAG}"
+      exit 1
+    fi
+  fi
+done
