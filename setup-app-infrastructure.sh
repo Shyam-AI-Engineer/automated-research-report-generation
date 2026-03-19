@@ -43,3 +43,55 @@ az storage share create \
   --name $FILE_SHARE \
   --account-name $STORAGE_ACCOUNT \
   --account-key $STORAGE_KEY
+
+# Create Azure Container Registry
+echo "Creating Container Registry: $APP_ACR_NAME..."
+az acr create \
+  --resource-group $APP_RESOURCE_GROUP \
+  --name $APP_ACR_NAME \
+  --sku Basic \
+  --admin-enabled true
+
+# Get ACR credentials
+ACR_USERNAME=$(az acr credential show \
+  --name $APP_ACR_NAME \
+  --query username -o tsv)
+
+ACR_PASSWORD=$(az acr credential show \
+  --name $APP_ACR_NAME \
+  --query passwords[0].value -o tsv)
+
+# Create Container Apps Environment
+echo "Creating Container Apps Environment: $CONTAINER_ENV..."
+az containerapp env create \
+  --name $CONTAINER_ENV \
+  --resource-group $APP_RESOURCE_GROUP \
+  --location $LOCATION
+
+echo ""
+echo "╔════════════════════════════════════════════════════════╗"
+echo "║           Setup Complete!                              ║"
+echo "╚════════════════════════════════════════════════════════╝"
+echo ""
+echo "IMPORTANT: Add these credentials to Jenkins:"
+echo ""
+echo "┌─────────────────────────────────────────────────────────┐"
+echo "│ Credential ID: acr-username                             │"
+echo "│ Value: $ACR_USERNAME"
+echo "└─────────────────────────────────────────────────────────┘"
+echo ""
+echo "┌─────────────────────────────────────────────────────────┐"
+echo "│ Credential ID: acr-password                             │"
+echo "│ Value: $ACR_PASSWORD"
+echo "└─────────────────────────────────────────────────────────┘"
+echo ""
+echo "┌─────────────────────────────────────────────────────────┐"
+echo "│ Credential ID: storage-account-name                     │"
+echo "│ Value: $STORAGE_ACCOUNT"
+echo "└─────────────────────────────────────────────────────────┘"
+echo ""
+echo "┌─────────────────────────────────────────────────────────┐"
+echo "│ Credential ID: storage-account-key                      │"
+echo "│ Value: $STORAGE_KEY"
+echo "└─────────────────────────────────────────────────────────┘"
+echo ""
